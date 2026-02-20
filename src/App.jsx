@@ -36,10 +36,10 @@ export default function App() {
   }, []);
 
   const handleJoinRoom = React.useCallback((data) => {
-    setRoomId(data.roomId);
-    setGameType(data.gameType);
-    setRoom(data.room);
-    setIsCreator(data.isCreator);
+    setRoomId(data.roomId ?? "");
+    setGameType(data.gameType ?? 13);
+    setRoom(data.room ?? null);
+    setIsCreator(data.isCreator ?? false);
     setScreen("game");
   }, []);
 
@@ -63,10 +63,10 @@ export default function App() {
         <Lobby socket={socket} userId={userId} onJoinRoom={handleJoinRoom} />
       )}
 
-      {screen === "game" && socket && roomId && (
+      {screen === "game" && socket && (
         <Game
           socket={socket}
-          roomId={roomId}
+          roomId={roomId ?? ""}
           gameType={gameType}
           initialRoom={room}
           isCreator={isCreator}

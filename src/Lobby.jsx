@@ -10,7 +10,7 @@ export default function Lobby({ socket, userId, onJoinRoom }) {
     if (!socket) return;
     setError("");
     setConnecting(true);
-    socket.emitWithAck(
+    socket.timeout(15000).emit(
       "create_room",
       {
         gameType,
@@ -19,17 +19,26 @@ export default function Lobby({ socket, userId, onJoinRoom }) {
         userId,
         username: "WebPlayer",
       },
-      (res) => {
+      (err, res) => {
         setConnecting(false);
-        if (res && res.ok) {
+        if (err) {
+          console.error("create_room timeout or error:", err);
+          setError("Request timed out");
+          alert("Request timed out. Try again.");
+          return;
+        }
+        console.log("create_room ack:", res);
+        if (res && (res.ok === true || res.success === true)) {
           onJoinRoom({
-            roomId: res.roomId,
-            gameType,
+            roomId: res.roomId ?? res.room?.roomId ?? "",
+            gameType: res.gameType ?? res.room?.gameType ?? gameType,
             room: res.room,
             isCreator: true,
           });
         } else {
-          setError(res?.reason || "Create room failed");
+          const reason = res?.reason || "Create room failed";
+          setError(reason);
+          alert(reason);
         }
       }
     );
@@ -44,24 +53,33 @@ export default function Lobby({ socket, userId, onJoinRoom }) {
     }
     setError("");
     setConnecting(true);
-    socket.emitWithAck(
+    socket.timeout(15000).emit(
       "join_room",
       {
         roomId: id,
         username: "WebPlayer",
         userId,
       },
-      (res) => {
+      (err, res) => {
         setConnecting(false);
-        if (res && res.ok) {
+        if (err) {
+          console.error("join_room timeout or error:", err);
+          setError("Request timed out");
+          alert("Request timed out. Try again.");
+          return;
+        }
+        console.log("join_room ack:", res);
+        if (res && (res.ok === true || res.success === true)) {
           onJoinRoom({
-            roomId: id,
-            gameType: res.room?.gameType ?? 13,
+            roomId: res.roomId ?? res.room?.roomId ?? id,
+            gameType: res.gameType ?? res.room?.gameType ?? 13,
             room: res.room,
             isCreator: false,
           });
         } else {
-          setError(res?.reason || "Join failed");
+          const reason = res?.reason || "Join failed";
+          setError(reason);
+          alert(reason);
         }
       }
     );
