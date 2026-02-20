@@ -1,13 +1,79 @@
-import React from 'react';
-import { BASE_URL } from './config';
+import React from "react";
+import { io } from "socket.io-client";
+import { BASE_URL } from "./config";
+import Lobby from "./Lobby";
+import Game from "./Game";
+
+function getUserId() {
+  let id = sessionStorage.getItem("rummy_userId");
+  if (!id) {
+    id = "web_" + Math.random().toString(36).slice(2, 12);
+    sessionStorage.setItem("rummy_userId", id);
+  }
+  return id;
+}
 
 export default function App() {
+  const [socket, setSocket] = React.useState(null);
+  const [connected, setConnected] = React.useState(false);
+  const [screen, setScreen] = React.useState("lobby");
+  const [roomId, setRoomId] = React.useState(null);
+  const [gameType, setGameType] = React.useState(13);
+  const [room, setRoom] = React.useState(null);
+  const [isCreator, setIsCreator] = React.useState(false);
+  const userId = React.useMemo(getUserId, []);
+
+  React.useEffect(() => {
+    const s = io(BASE_URL, { autoConnect: true });
+    s.on("connect", () => setConnected(true));
+    s.on("disconnect", () => setConnected(false));
+    setSocket(s);
+    return () => {
+      s.off("connect");
+      s.off("disconnect");
+      s.disconnect();
+    };
+  }, []);
+
+  const handleJoinRoom = React.useCallback((data) => {
+    setRoomId(data.roomId);
+    setGameType(data.gameType);
+    setRoom(data.room);
+    setIsCreator(data.isCreator);
+    setScreen("game");
+  }, []);
+
+  const handleBackToLobby = React.useCallback(() => {
+    setRoomId(null);
+    setRoom(null);
+    setScreen("lobby");
+  }, []);
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold">Rummy – 13 & 21 Card</h1>
-        <p className="mt-2 text-gray-400">Web client. Backend: {BASE_URL}</p>
+    <div className="app">
+      <div className="app-status">
+        {connected ? (
+          <span className="status-connected">Connected</span>
+        ) : (
+          <span className="status-disconnected">Disconnected</span>
+        )}
       </div>
+
+      {screen === "lobby" && (
+        <Lobby socket={socket} userId={userId} onJoinRoom={handleJoinRoom} />
+      )}
+
+      {screen === "game" && socket && roomId && (
+        <Game
+          socket={socket}
+          roomId={roomId}
+          gameType={gameType}
+          initialRoom={room}
+          isCreator={isCreator}
+          userId={userId}
+          onBackToLobby={handleBackToLobby}
+        />
+      )}
     </div>
   );
 }
