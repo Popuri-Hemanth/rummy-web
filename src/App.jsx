@@ -1,5 +1,6 @@
 import React from "react";
 import { io } from "socket.io-client";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import { BASE_URL } from "./config";
 import Lobby from "./Lobby";
 import Game from "./Game";
@@ -74,6 +75,7 @@ export default function App() {
           onBackToLobby={handleBackToLobby}
         />
       )}
+      <SpeedInsights />
     </div>
   );
 }
